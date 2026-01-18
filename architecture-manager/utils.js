@@ -3,14 +3,7 @@ const path = require('path');
 const yaml = require('js-yaml');
 const sharp = require('sharp');
 const { spawn, execSync, exec } = require('child_process');
-const OpenAI = require('openai');
 const { InterfaceGraph } = require('./graph');
-const { VISION_PROMPT } = require('./prompts');
-
-const openai = new OpenAI({
-    apiKey: "sk-jsowIKpu0NPZtdD_m_AdiYQ4i72mbLBchSfJA5k2NDetJO6pKNMHzOOikHg",
-    baseURL: "https://tapi.nyc.mn/v1"
-});
 
 // --- Basic file and data operations ---
 
@@ -183,16 +176,18 @@ async function popNextRequirement(projectRoot, progressFileName, reqDocPath) {
   }
 
   if (!nextTask) return { formattedOutput: "All requirements completed!" };
+  const rawReqs = loadRequirementTree(reqDocPath, nextTask.id);
+  if (!rawReqs) {
+    return { error: `Requirement definition not found for ${nextTask.id}` };
+  }
 
-  // --- Generate Prompt Context ---
-  const rawReqs = loadYaml(reqDocPath);
   const reqDetail = findRequirementById(rawReqs, nextTask.id);
+  if (!reqDetail) {
+    return { error: `Requirement node not found for ${nextTask.id}` };
+  }
   const ancestorIds = getAncestorIds(rawReqs, nextTask.id) || [];
-  
-  // Visual processing (Keep as is)
-  const reqDocDir = path.dirname(reqDocPath);
-  const images = await extractImages(reqDocDir, reqDetail.description);
-  const imgDesc = await generateImageDescriptions(projectRoot, images);
+
+  const imgDesc = {};
 
   // Graph context (Use new logic)
   const graph = new InterfaceGraph(projectRoot);
@@ -257,7 +252,12 @@ function formatDualPhaseResponse(req, phase, context, imgDesc) {
     out += formatFiles(context.references, "Global Utilities");
   }
 
-  out += `\n### Requirement: ${req.name}\n${req.description || ''}\n`;
+  const descriptionParts = [];
+  if (req.functional_description) descriptionParts.push(req.functional_description);
+  if (req.ui_description) descriptionParts.push(req.ui_description);
+  const descriptionText = descriptionParts.join('\n\n');
+
+  out += `\n### Requirement: ${req.name}\n${descriptionText}\n`;
 
   if (Object.keys(imgDesc).length > 0) {
     out += `\n### UI Descriptions:\n`;
@@ -317,95 +317,7 @@ async function extractImages(baseDir, text) {
 }
 
 async function generateImageDescriptions(projectRoot, imagesMap) {
-  const descriptions = {};
-  const entries = Object.entries(imagesMap);
-
-  if (entries.length === 0) return descriptions;
-
-  const cachePath = path.join(projectRoot, 'artifacts', 'ui_description.json');
-  let cache = {};
-  
-  if (fs.existsSync(cachePath)) {
-    try {
-      cache = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
-    } catch (e) {
-      console.warn(`[Cache Warning] Failed to parse ${cachePath}, starting with empty cache.`);
-    }
-  }
-
-  const missingEntries = [];
-
-  entries.forEach(([pathKey, base64Data]) => {
-    if (cache[pathKey]) {
-      descriptions[pathKey] = cache[pathKey];
-    } else {
-      missingEntries.push([pathKey, base64Data]);
-    }
-  });
-
-  if (missingEntries.length === 0) {
-    return descriptions;
-  }
-
-  console.error(`[Vision] Processing ${missingEntries.length} new images (Cached: ${entries.length - missingEntries.length})...`);
-
-  let hasUpdates = false;
-
-  await Promise.all(missingEntries.map(async ([pathKey, base64Data]) => {
-    try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-5.2",
-        messages: [
-          {
-            role: "system",
-            content: "You are a specialized UI-to-Code reverse engineering AI. You output technical specs only."
-          },
-          {
-            role: "user",
-            content: [
-              { 
-                type: "text", 
-                text: `${VISION_PROMPT}\n\nTarget Image: ${pathKey}` 
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Data}`,
-                  detail: "high"
-                },
-              },
-            ],
-          },
-        ],
-        temperature: 0.1, 
-        max_tokens: 4000,
-      });
-
-      const content = response.choices[0].message.content;
-      
-      descriptions[pathKey] = content;
-      
-      cache[pathKey] = content;
-      hasUpdates = true;
-
-    } catch (error) {
-      console.error(`[Vision Error] Failed to analyze ${pathKey}:`, error);
-      descriptions[pathKey] = `[API EXCEPTION] Full Error Dump:\n${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`;
-    }
-  }));
-
-  if (hasUpdates) {
-    try {
-      const dir = path.dirname(cachePath);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(cachePath, JSON.stringify(cache, null, 2), 'utf8');
-      console.log(`[Vision] Cache updated at ${cachePath}`);
-    } catch (e) {
-      console.error(`[Vision Error] Failed to save cache: ${e.message}`);
-    }
-  }
-
-  return descriptions;
+  return {};
 }
 
 function registerInterfaceItem(projectRoot, itemId, newItemData, mergeArrays = []) {
@@ -471,12 +383,19 @@ function updateRequirementArtifacts(projectRoot, reqId, category, artifactId) {
 async function startService(cwd, name) {
   return new Promise((resolve, reject) => {
     console.error(`[Process] Starting ${name} in ${cwd}...`);
-    
-    const child = spawn('npm', ['run', 'dev'], {
+
+    let command;
+    if (name === "Backend") {
+      command = 'uvicorn app.main:app --reload --port 8000';
+    } else {
+      command = 'npm run dev';
+    }
+
+    const child = spawn(command, {
       cwd: cwd,
       detached: true,
       stdio: 'ignore',
-      shell: true 
+      shell: true
     });
 
     child.on('error', (err) => {
@@ -485,7 +404,7 @@ async function startService(cwd, name) {
     });
 
     child.unref();
-    
+
     setTimeout(() => {
       resolve(true);
     }, 5000);
@@ -526,6 +445,28 @@ function killProcessOnPort(port) {
     console.error(`[Process Error] Failed to kill port ${port}:`, err.message);
     return false;
   }
+}
+
+function loadRequirementTree(reqDocPath, rootId) {
+  if (!reqDocPath) return null;
+  if (!fs.existsSync(reqDocPath)) return null;
+
+  const stat = fs.statSync(reqDocPath);
+  if (stat.isFile()) {
+    return loadYaml(reqDocPath);
+  }
+
+  const files = fs.readdirSync(reqDocPath);
+  for (const file of files) {
+    if (!file.endsWith('.yaml') && !file.endsWith('.yml')) continue;
+    const fullPath = path.join(reqDocPath, file);
+    const data = loadYaml(fullPath);
+    if (!data) continue;
+    const node = findRequirementById(data, rootId);
+    if (node) return data;
+  }
+
+  return null;
 }
 
 module.exports = {

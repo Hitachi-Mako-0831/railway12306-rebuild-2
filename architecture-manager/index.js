@@ -71,7 +71,7 @@ server.tool(
     const { project_root } = args;
 
     try {
-      const result = await popNextRequirement(project_root, 'progress.yaml', path.join(project_root, 'requirement/requirements.yaml'));
+      const result = await popNextRequirement(project_root, 'progress.yaml', path.join(project_root, 'docs', 'requirements'));
       
       if (result.error) return { content: [{ type: "text", text: result.error }] };
       
@@ -195,7 +195,7 @@ server.tool(
 // --- Start Services Tool ---
 server.tool(
   "start_dev_server",
-  "Start Frontend (5173) and Backend (3000) servers in background modes for E2E testing.",
+  "Start Frontend (5173) and Backend (8000) servers in background modes for E2E testing.",
   {
     project_root: z.string().describe("MANDATORY. Project root path."),
   },
@@ -205,7 +205,7 @@ server.tool(
     const beDir = path.join(project_root, 'backend');
 
     try {
-      killProcessOnPort(3000);
+      killProcessOnPort(8000);
       killProcessOnPort(5173);
 
       await startService(beDir, "Backend");
@@ -214,7 +214,7 @@ server.tool(
       return { 
         content: [{ 
           type: "text", 
-          text: `Services Started.\n- Frontend: http://localhost:5173\n- Backend: http://localhost:3000\n\nYou can now run Playwright tests against these URLs.` 
+          text: `Services Started.\n- Frontend: http://localhost:5173\n- Backend: http://localhost:8000\n\nYou can now run Playwright tests against these URLs.` 
         }] 
       };
     } catch (err) {
@@ -226,13 +226,13 @@ server.tool(
 // --- Stop Services Tool ---
 server.tool(
   "stop_dev_server",
-  "Stop Frontend and Backend servers by killing processes on ports 3000 and 5173.",
+  "Stop Frontend and Backend servers by killing processes on ports 8000 and 5173.",
   {},
   async (args) => {
     try {
-      killProcessOnPort(3000);
+      killProcessOnPort(8000);
       killProcessOnPort(5173);
-      return { content: [{ type: "text", text: "Services Stopped (Ports 3000 & 5173 released)." }] };
+      return { content: [{ type: "text", text: "Services Stopped (Ports 8000 & 5173 released)." }] };
     } catch (err) {
       return { content: [{ type: "text", text: `Error stopping services: ${err.message}` }] };
     }
