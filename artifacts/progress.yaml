@@ -16,7 +16,7 @@
 - id: REQ-4
   parentId: null
   childrenIds: []
-  status: PENDING_IMPL
+  status: COMPLETED
   artifacts:
     ui_ids:
       - UI-PASSENGER-PAGE

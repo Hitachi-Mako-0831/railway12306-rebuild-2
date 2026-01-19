@@ -137,6 +137,16 @@ const filteredPassengers = computed(() => {
   return passengers.value.filter(p => p.name.includes(searchText.value));
 });
 
+const maskIdCard = (val) => {
+  if (!val || val.length < 10) return val;
+  return val.substring(0, 6) + '****' + val.substring(val.length - 4);
+};
+
+const maskPhone = (val) => {
+  if (!val || val.length < 11) return val;
+  return val.substring(0, 3) + '****' + val.substring(val.length - 4);
+};
+
 const getPassengerTypeLabel = (val) => {
   const map = { 0: '成人', 1: '学生', 2: '儿童' };
   return map[val] || val;
