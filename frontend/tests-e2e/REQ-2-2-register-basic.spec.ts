@@ -7,11 +7,15 @@ test.describe('REQ-2-2 用户注册基础流程', () => {
     const suffix = Date.now().toString();
     const username = `testuser_${suffix}`;
     const email = `testuser_${suffix}@example.com`;
+    const idNumber = `11010119900101${suffix.slice(-4)}`;
 
     await page.getByPlaceholder('请输入用户名').fill(username);
     await page.getByPlaceholder('请输入密码').fill('abc12345');
     await page.getByPlaceholder('请再次输入密码').fill('abc12345');
     await page.getByPlaceholder('请输入邮箱').fill(email);
+    await page.getByPlaceholder('请输入姓名').fill('测试用户');
+    await page.getByPlaceholder('请输入证件号码').fill(idNumber);
+    await page.getByPlaceholder('请输入手机号').fill('13800000000');
 
     await page.getByText('我已阅读并同意《用户服务条款》和《隐私政策》').click();
 

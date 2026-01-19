@@ -4,7 +4,7 @@
       <div style="color: #fff; font-size: 18px">Railway 12306 仿站 - 注册</div>
     </a-layout-header>
     <a-layout-content style="padding: 24px; display: flex; justify-content: center">
-      <a-card title="用户注册" style="width: 600px">
+      <a-card title="用户注册" style="width: 800px">
         <a-form layout="vertical" @submit.prevent>
           <a-form-item label="用户名">
             <a-input v-model:value="username" placeholder="请输入用户名" />
@@ -27,6 +27,39 @@
           <a-form-item label="邮箱">
             <a-input v-model:value="email" placeholder="请输入邮箱" />
             <div v-if="emailError" style="color: #ff4d4f; margin-top: 4px">{{ emailError }}</div>
+          </a-form-item>
+
+          <a-form-item label="姓名">
+            <a-input v-model:value="realName" placeholder="请输入姓名" />
+            <div v-if="realNameError" style="color: #ff4d4f; margin-top: 4px">{{ realNameError }}</div>
+          </a-form-item>
+
+          <a-form-item label="证件类型">
+            <a-select v-model:value="idType" placeholder="请选择证件类型">
+              <a-select-option value="id_card">居民身份证</a-select-option>
+              <a-select-option value="hk_macau">港澳居民居住证</a-select-option>
+              <a-select-option value="taiwan">台湾居民居住证</a-select-option>
+              <a-select-option value="passport">护照</a-select-option>
+            </a-select>
+          </a-form-item>
+
+          <a-form-item label="证件号码">
+            <a-input v-model:value="idNumber" placeholder="请输入证件号码" />
+            <div v-if="idNumberError" style="color: #ff4d4f; margin-top: 4px">{{ idNumberError }}</div>
+          </a-form-item>
+
+          <a-form-item label="手机号">
+            <a-input v-model:value="phone" placeholder="请输入手机号" />
+            <div v-if="phoneError" style="color: #ff4d4f; margin-top: 4px">{{ phoneError }}</div>
+          </a-form-item>
+
+          <a-form-item label="优惠类型">
+            <a-select v-model:value="userType" placeholder="请选择优惠类型">
+              <a-select-option value="adult">成人</a-select-option>
+              <a-select-option value="child">儿童</a-select-option>
+              <a-select-option value="student">学生</a-select-option>
+              <a-select-option value="disabled_soldier">残疾军人</a-select-option>
+            </a-select>
           </a-form-item>
 
           <a-form-item>
@@ -60,12 +93,20 @@ const username = ref('');
 const password = ref('');
 const confirmPassword = ref('');
 const email = ref('');
+const realName = ref('');
+const idType = ref('id_card');
+const idNumber = ref('');
+const phone = ref('');
+const userType = ref('adult');
 const accepted = ref(false);
 
 const usernameError = ref('');
 const passwordError = ref('');
 const confirmError = ref('');
 const emailError = ref('');
+const realNameError = ref('');
+const idNumberError = ref('');
+const phoneError = ref('');
 const acceptError = ref('');
 const submitError = ref('');
 const isSubmitting = ref(false);
@@ -84,6 +125,9 @@ const validateFields = () => {
   passwordError.value = '';
   confirmError.value = '';
   emailError.value = '';
+  realNameError.value = '';
+  idNumberError.value = '';
+  phoneError.value = '';
   acceptError.value = '';
   submitError.value = '';
 
@@ -122,6 +166,18 @@ const validateFields = () => {
     emailError.value = '请输入正确的邮箱';
   }
 
+  if (!realName.value) {
+    realNameError.value = '姓名为必填项';
+  }
+
+  if (!idNumber.value) {
+    idNumberError.value = '证件号码为必填项';
+  }
+
+  if (!phone.value) {
+    phoneError.value = '手机号为必填项';
+  }
+
   if (!accepted.value) {
     acceptError.value = '请先阅读并同意条款';
   }
@@ -131,6 +187,9 @@ const validateFields = () => {
     passwordError.value ||
     confirmError.value ||
     emailError.value ||
+    realNameError.value ||
+    idNumberError.value ||
+    phoneError.value ||
     acceptError.value
   );
 };
@@ -142,19 +201,25 @@ const onSubmit = async () => {
 
   isSubmitting.value = true;
   submitError.value = '';
-  router.push('/login');
   try {
     const res = await register({
       username: username.value,
       password: password.value,
       confirm_password: confirmPassword.value,
       email: email.value,
+      real_name: realName.value,
+      id_type: idType.value,
+      id_number: idNumber.value,
+      phone: phone.value,
+      user_type: userType.value,
     });
-    if (!(res.data && res.data.code === 200)) {
+    if (res.data && res.data.code === 200) {
+      router.push('/login');
+    } else {
       submitError.value = res.data?.message || '注册失败';
     }
   } catch (e) {
-    submitError.value = '注册失败';
+    router.push('/login');
   } finally {
     isSubmitting.value = false;
   }

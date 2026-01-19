@@ -6,6 +6,7 @@ import OrderConfirm from '../views/order/OrderConfirm.vue';
 import LoginPage from '../views/auth/LoginPage.vue';
 import RegisterPage from '../views/auth/RegisterPage.vue';
 import ForgotPasswordPage from '../views/auth/ForgotPasswordPage.vue';
+import ProfilePage from '../views/user/ProfilePage.vue';
 
 const routes = [
   {
@@ -42,6 +43,11 @@ const routes = [
     path: '/forgot-password',
     name: 'ForgotPassword',
     component: ForgotPasswordPage
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: ProfilePage
   }
 ];
 

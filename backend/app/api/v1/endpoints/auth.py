@@ -1,7 +1,15 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
 
-from app.core.security import create_access_token, get_password_hash, verify_password
+from app.core.security import (
+    ALGORITHM,
+    SECRET_KEY,
+    create_access_token,
+    get_password_hash,
+    verify_password,
+)
 from app.db.session import SessionLocal
 from app.models.user import User
 from app.schemas.auth import (
@@ -15,6 +23,9 @@ from app.schemas.auth import (
 router = APIRouter()
 
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
+
+
 DEMO_USERS: dict[str, dict[str, str]] = {
     "demo_user": {
         "username": "demo_user",
@@ -25,16 +36,36 @@ DEMO_USERS: dict[str, dict[str, str]] = {
 
 @router.post("/login", summary="用户登录")
 async def login(payload: UserLoginRequest) -> dict:
-    user_record = DEMO_USERS.get(payload.username)
-    if not user_record or not verify_password(
-        payload.password, user_record["hashed_password"]
-    ):
-        raise HTTPException(
-            status_code=401,
-            detail={"code": 401, "message": "用户名或密码错误", "data": None},
+    db = SessionLocal()
+    identifier = payload.username
+    user = None
+    try:
+        user = (
+            db.query(User)
+            .filter(
+                (User.username == identifier)
+                | (User.email == identifier)
+                | (User.phone == identifier)
+            )
+            .first()
         )
+    finally:
+        db.close()
 
-    token = create_access_token({"sub": payload.username})
+    if user and verify_password(payload.password, user.hashed_password):
+        token_subject = user.username
+    else:
+        demo_record = DEMO_USERS.get(identifier)
+        if not demo_record or not verify_password(
+            payload.password, demo_record["hashed_password"]
+        ):
+            raise HTTPException(
+                status_code=401,
+                detail={"code": 401, "message": "用户名或密码错误", "data": None},
+            )
+        token_subject = demo_record["username"]
+
+    token = create_access_token({"sub": token_subject})
     token_response = TokenResponse(access_token=token, token_type="bearer")
     return {
         "code": 200,
@@ -95,6 +126,11 @@ async def register(payload: UserRegisterRequest) -> dict:
             username=payload.username,
             email=payload.email,
             hashed_password=get_password_hash(payload.password),
+            real_name=payload.real_name,
+            id_type=payload.id_type,
+            id_number=payload.id_number,
+            phone=payload.phone,
+            user_type=payload.user_type,
         )
         db.add(user)
         db.commit()
@@ -105,6 +141,32 @@ async def register(payload: UserRegisterRequest) -> dict:
         "code": 200,
         "message": "注册成功",
         "data": {"username": payload.username, "email": payload.email},
+    }
+
+
+@router.post("/refresh", summary="刷新令牌")
+async def refresh(token: str = Depends(oauth2_scheme)) -> dict:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise HTTPException(
+            status_code=401,
+            detail={"code": 401, "message": "无效的令牌", "data": None},
+        )
+
+    subject = payload.get("sub")
+    if not subject:
+        raise HTTPException(
+            status_code=401,
+            detail={"code": 401, "message": "无效的令牌", "data": None},
+        )
+
+    new_token = create_access_token({"sub": subject})
+    token_response = TokenResponse(access_token=new_token, token_type="bearer")
+    return {
+        "code": 200,
+        "message": "刷新成功",
+        "data": token_response.model_dump(),
     }
 
 

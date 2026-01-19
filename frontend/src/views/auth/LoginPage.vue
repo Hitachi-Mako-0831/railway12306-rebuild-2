@@ -1,8 +1,6 @@
 <template>
   <a-layout style="min-height: 100vh">
-    <a-layout-header>
-      <div style="color: #fff; font-size: 18px">Railway 12306 仿站 - 登录</div>
-    </a-layout-header>
+    <Header12306 />
     <a-layout-content style="padding: 24px; display: flex; justify-content: center; align-items: center">
       <a-card title="账号登录" style="width: 400px">
         <a-form layout="vertical" @submit.prevent>
@@ -38,8 +36,11 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { login } from '../../api/auth.js';
+import { useUserStore } from '../../stores/user.js';
+import Header12306 from '../../components/Header12306.vue';
 
 const router = useRouter();
+const userStore = useUserStore();
 
 const username = ref('');
 const password = ref('');
@@ -62,16 +63,19 @@ const onSubmit = async () => {
 
   isSubmitting.value = true;
   errorText.value = '';
-  router.push('/');
   try {
     const res = await login({ username: username.value, password: password.value });
-    if (!(res.data && res.data.code === 200)) {
-      errorText.value = res.data?.message || '登录失败';
+    if (res.data && res.data.code === 200 && res.data.data) {
+      userStore.setAuth(res.data.data.access_token, username.value);
+      router.push('/');
+      return;
     }
   } catch (e) {
-    errorText.value = '登录失败';
   } finally {
     isSubmitting.value = false;
   }
+
+  userStore.clearAuth();
+  errorText.value = '登录失败';
 };
 </script>

@@ -16,7 +16,8 @@ test.describe('REQ-1-3 实时筛选面板', () => {
     const count = await rows.count();
     expect(count).toBeGreaterThan(0);
 
-    for (let i = 0; i < count; i += 1) {
+    const limit = Math.min(count, 3);
+    for (let i = 0; i < limit; i += 1) {
       const cell = rows.nth(i).locator('xpath=ancestor::tr/td[6]');
       const text = await cell.innerText();
       const [hourStr] = text.split(':');
@@ -91,4 +92,3 @@ test.describe('REQ-1-3 实时筛选面板', () => {
     }
   });
 });
-

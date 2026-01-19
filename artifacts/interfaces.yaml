@@ -1,32 +1,35 @@
 API-REQ-2-1-LOGIN:
   type: API
   related_req_id: REQ-2-1
-  signature: POST /api/v1/login
+  signature: 'POST /api/v1/login (login(payload: UserLoginRequest) -> dict)'
   path: backend/app/api/v1/endpoints/auth.py
   description: 用户登录接口 /api/v1/login
   upstream_ids: []
-  downstream_ids: []
+  downstream_ids:
+    - FUNC-SECURITY-CREATE-TOKEN
 UI-REQ-2-1-LOGIN-PAGE:
   type: UI
   related_req_id: REQ-2-1
-  description: 登录页面 LoginPage.vue
+  description: 账号登录页面，调用 /api/v1/login 并更新 userStore
   path: frontend/src/views/auth/LoginPage.vue
   signature: /login
   upstream_ids: []
   downstream_ids:
     - API-REQ-2-1-LOGIN
+    - UI-HEADER-USER-STATE
 API-REQ-2-2-REGISTER:
   type: API
   related_req_id: REQ-2-2
-  signature: POST /api/v1/register
+  signature: 'POST /api/v1/register (register(payload: UserRegisterRequest) -> dict)'
   path: backend/app/api/v1/endpoints/auth.py
   description: 用户注册接口 /api/v1/register
   upstream_ids: []
-  downstream_ids: []
+  downstream_ids:
+    - FUNC-DB-USERS
 UI-REQ-2-2-REGISTER-PAGE:
   type: UI
   related_req_id: REQ-2-2
-  description: 用户注册页面 RegisterPage.vue
+  description: 用户注册页面，前端校验用户名/密码/邮箱并调用 /api/v1/register
   path: frontend/src/views/auth/RegisterPage.vue
   signature: /register
   upstream_ids: []
@@ -48,3 +51,86 @@ UI-REQ-2-3-FORGOT-PASSWORD:
   path: frontend/src/views/auth/ForgotPasswordPage.vue
   downstream_ids:
     - API-REQ-2-3-PASSWORD-RESET
+API-REQ-2-4-USER-PROFILE:
+  type: API
+  related_req_id: REQ-2-4
+  signature: GET /api/v1/users/profile
+  path: backend/app/api/v1/endpoints/users.py
+  description: 获取当前用户个人信息
+  upstream_ids:
+    - UI-REQ-2-4-PROFILE-PAGE
+  downstream_ids: []
+UI-REQ-2-4-PROFILE-PAGE:
+  type: UI
+  related_req_id: REQ-2-4
+  description: 个人中心页面，展示基本信息、联系方式和附加信息
+  path: frontend/src/views/user/ProfilePage.vue
+  downstream_ids:
+    - API-REQ-2-4-USER-PROFILE
+FUNC-SECURITY-CREATE-TOKEN:
+  type: FUNC
+  related_req_id: REQ-2-1
+  signature: 'create_access_token(data: dict, expires_delta: timedelta | None = None) -> str'
+  path: backend/app/core/security.py
+  db_tables: []
+FUNC-DB-USERS:
+  type: FUNC
+  related_req_id: REQ-2-2
+  signature: SQLAlchemy User model for users table
+  path: backend/app/models/user.py
+  db_tables:
+    - users
+API-REQ-2-5-LOGOUT:
+  type: API
+  related_req_id: REQ-2-5
+  signature: POST /api/v1/logout
+  path: backend/app/api/v1/endpoints/auth.py
+  description: 退出登录接口 /api/v1/logout
+  upstream_ids: []
+  downstream_ids: []
+  db_tables: []
+UI-HEADER-USER-STATE:
+  type: UI
+  related_req_id: REQ-2-6
+  description: 顶部导航栏根据登录状态展示登录/注册或欢迎与我的12306下拉菜单
+  path: frontend/src/components/Header12306.vue
+  signature: <Header12306 />
+  upstream_ids: []
+  downstream_ids:
+    - API-REQ-2-5-LOGOUT
+    - API-REQ-2-6-REFRESH
+  db_tables: []
+API-REQ-2-4-USER-PROFILE-UPDATE:
+  type: API
+  related_req_id: REQ-2-8
+  signature: PUT /api/v1/users/profile (update_profile)
+  path: backend/app/api/v1/endpoints/users.py
+  description: 更新当前用户个人信息 /api/v1/users/profile
+  upstream_ids:
+    - UI-REQ-2-4-PROFILE-PAGE
+  downstream_ids:
+    - FUNC-DB-USERS
+  db_tables:
+    - users
+UI-REQ-2-8-PROFILE-EDIT:
+  type: UI
+  related_req_id: REQ-2-8
+  description: 个人中心页面编辑并更新当前用户个人信息
+  path: frontend/src/views/user/ProfilePage.vue
+  signature: /profile 编辑与保存
+  upstream_ids: []
+  downstream_ids:
+    - API-REQ-2-4-USER-PROFILE
+    - API-REQ-2-4-USER-PROFILE-UPDATE
+  db_tables: []
+API-REQ-2-6-REFRESH:
+  type: API
+  related_req_id: REQ-2-6
+  signature: 'POST /api/v1/refresh (refresh(token: str = Depends(oauth2_scheme)) -> dict)'
+  path: backend/app/api/v1/endpoints/auth.py
+  description: 刷新令牌接口 /api/v1/refresh
+  upstream_ids:
+    - UI-HEADER-USER-STATE
+  downstream_ids:
+    - FUNC-SECURITY-CREATE-TOKEN
+  db_tables: []
