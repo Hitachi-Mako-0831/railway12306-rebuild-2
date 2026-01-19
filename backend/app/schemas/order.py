@@ -46,5 +46,6 @@ class Order(OrderBase):
     created_at: datetime
     expires_at: datetime
     items: List[OrderItem]
+    train: Optional[Train] = None
     
     model_config = ConfigDict(from_attributes=True)

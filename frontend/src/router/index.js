@@ -26,6 +26,11 @@ const routes = [
     component: OrderConfirm
   },
   {
+    path: '/order/detail/:id',
+    name: 'OrderDetail',
+    component: () => import('../views/order/OrderDetail.vue')
+  },
+  {
     path: '/user/orders',
     name: 'UserOrders',
     component: () => import('../views/user/OrderPage.vue')

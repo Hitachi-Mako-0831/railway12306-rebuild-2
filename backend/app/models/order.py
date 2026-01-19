@@ -7,6 +7,7 @@ from sqlalchemy.sql import func
 
 from app.db.base_class import Base
 from app.models.enums import OrderStatus, SeatType
+from app.models.train import Train
 
 class Order(Base):
     __tablename__ = "orders"
