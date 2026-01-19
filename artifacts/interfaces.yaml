@@ -1,0 +1,50 @@
+API-REQ-2-1-LOGIN:
+  type: API
+  related_req_id: REQ-2-1
+  signature: POST /api/v1/login
+  path: backend/app/api/v1/endpoints/auth.py
+  description: 用户登录接口 /api/v1/login
+  upstream_ids: []
+  downstream_ids: []
+UI-REQ-2-1-LOGIN-PAGE:
+  type: UI
+  related_req_id: REQ-2-1
+  description: 登录页面 LoginPage.vue
+  path: frontend/src/views/auth/LoginPage.vue
+  signature: /login
+  upstream_ids: []
+  downstream_ids:
+    - API-REQ-2-1-LOGIN
+API-REQ-2-2-REGISTER:
+  type: API
+  related_req_id: REQ-2-2
+  signature: POST /api/v1/register
+  path: backend/app/api/v1/endpoints/auth.py
+  description: 用户注册接口 /api/v1/register
+  upstream_ids: []
+  downstream_ids: []
+UI-REQ-2-2-REGISTER-PAGE:
+  type: UI
+  related_req_id: REQ-2-2
+  description: 用户注册页面 RegisterPage.vue
+  path: frontend/src/views/auth/RegisterPage.vue
+  signature: /register
+  upstream_ids: []
+  downstream_ids:
+    - API-REQ-2-2-REGISTER
+API-REQ-2-3-PASSWORD-RESET:
+  type: API
+  related_req_id: REQ-2-3
+  signature: POST /api/v1/auth/password/recovery/reset
+  path: backend/app/api/v1/endpoints/auth.py
+  description: 找回密码重置链接模拟接口
+  upstream_ids:
+    - UI-REQ-2-3-FORGOT-PASSWORD
+  downstream_ids: []
+UI-REQ-2-3-FORGOT-PASSWORD:
+  type: UI
+  related_req_id: REQ-2-3
+  description: 找回密码表单页面，提交用户名和邮箱发起密码重置
+  path: frontend/src/views/auth/ForgotPasswordPage.vue
+  downstream_ids:
+    - API-REQ-2-3-PASSWORD-RESET
