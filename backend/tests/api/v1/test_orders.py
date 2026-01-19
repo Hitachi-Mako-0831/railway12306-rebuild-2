@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from app.core.config import settings
+
+# from app.core.config import settings # Config missing, use hardcoded prefix
+API_V1_STR = "/api/v1"
 
 def test_create_order(client: TestClient, db: Session):
     data = {
@@ -16,8 +18,7 @@ def test_create_order(client: TestClient, db: Session):
             }
         ]
     }
-    # Expect success, but currently it returns 501
-    response = client.post(f"{settings.API_V1_STR}/orders/", json=data)
+    response = client.post(f"{API_V1_STR}/orders/", json=data)
     assert response.status_code == 200
     content = response.json()
     assert content["total_price"] == 100.0
@@ -25,7 +26,7 @@ def test_create_order(client: TestClient, db: Session):
     assert "id" in content
 
 def test_read_orders(client: TestClient, db: Session):
-    response = client.get(f"{settings.API_V1_STR}/orders/")
+    response = client.get(f"{API_V1_STR}/orders/")
     assert response.status_code == 200
     content = response.json()
     assert isinstance(content, list)
