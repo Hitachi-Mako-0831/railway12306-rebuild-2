@@ -63,15 +63,21 @@
       :title="isEdit ? '编辑乘客' : '添加乘客'"
       @ok="handleModalOk"
     >
-      <a-form :model="formState" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
-        <a-form-item label="姓名" required>
+      <a-form 
+        ref="formRef"
+        :model="formState" 
+        :rules="rules"
+        :label-col="{ span: 6 }" 
+        :wrapper-col="{ span: 16 }"
+      >
+        <a-form-item label="姓名" name="name" required>
           <a-input 
             v-model:value="formState.name" 
             placeholder="请输入姓名" 
             :disabled="isEdit && formState.is_default"
           />
         </a-form-item>
-        <a-form-item label="证件类型" required>
+        <a-form-item label="证件类型" name="id_type" required>
           <a-select 
             v-model:value="formState.id_type"
             :disabled="isEdit && formState.is_default"
@@ -82,21 +88,21 @@
             <a-select-option :value="3">港澳通行证</a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item label="证件号码" required>
+        <a-form-item label="证件号码" name="id_card" required>
           <a-input 
             v-model:value="formState.id_card" 
             placeholder="请输入证件号码" 
             :disabled="isEdit && formState.is_default"
           />
         </a-form-item>
-        <a-form-item label="旅客类型">
+        <a-form-item label="旅客类型" name="type">
           <a-select v-model:value="formState.type">
             <a-select-option :value="0">成人</a-select-option>
             <a-select-option :value="1">学生</a-select-option>
             <a-select-option :value="2">儿童</a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item label="手机号" required>
+        <a-form-item label="手机号" name="phone" required>
           <a-input v-model:value="formState.phone" placeholder="请输入手机号" />
         </a-form-item>
       </a-form>
@@ -105,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, nextTick } from 'vue';
 import { message } from 'ant-design-vue';
 import { getPassengers, createPassenger, updatePassenger, deletePassenger } from '../../api/passenger';
 
@@ -115,6 +121,7 @@ const searchText = ref('');
 const modalVisible = ref(false);
 const isEdit = ref(false);
 const currentId = ref(null);
+const formRef = ref(null);
 
 const formState = reactive({
   name: '',
@@ -124,6 +131,48 @@ const formState = reactive({
   phone: '',
   is_default: false
 });
+
+const PATTERN_PHONE_CN = /^1[3-9]\d{9}$/;
+const PATTERN_ID_CARD_CN = /^[1-9]\d{5}(18|19|20)\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$/;
+const PATTERN_PASSPORT = /^[a-zA-Z0-9]{5,15}$/;
+const PATTERN_CHINESE_NAME = /^[\u4e00-\u9fa5]{2,15}(?:·[\u4e00-\u9fa5]{2,15})*$/;
+const PATTERN_PASSPORT_NAME = /^[a-zA-Z]+(?:\s[a-zA-Z]+)*$/;
+
+const validateName = async (_rule, value) => {
+  if (!value) {
+    return Promise.reject('请输入姓名');
+  }
+  if (PATTERN_CHINESE_NAME.test(value) || PATTERN_PASSPORT_NAME.test(value)) {
+    return Promise.resolve();
+  }
+  return Promise.reject('姓名格式不正确(需为中文或英文姓名)');
+};
+
+const validateIdCard = async (_rule, value) => {
+  if (!value) {
+    return Promise.reject('请输入证件号码');
+  }
+  if (formState.id_type === 0) {
+    if (!PATTERN_ID_CARD_CN.test(value)) {
+      return Promise.reject('身份证格式不正确');
+    }
+  } else if (formState.id_type === 1) {
+    if (!PATTERN_PASSPORT.test(value)) {
+      return Promise.reject('护照号码格式不正确');
+    }
+  }
+  return Promise.resolve();
+};
+
+const rules = {
+  name: [{ required: true, validator: validateName, trigger: 'blur' }],
+  id_type: [{ required: true, message: '请选择证件类型', trigger: 'change' }],
+  id_card: [{ required: true, validator: validateIdCard, trigger: 'blur' }],
+  phone: [
+    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { pattern: PATTERN_PHONE_CN, message: '手机号格式不正确', trigger: 'blur' }
+  ]
+};
 
 const columns = [
   { title: '姓名', dataIndex: 'name', key: 'name' },
@@ -183,6 +232,9 @@ const showAddModal = () => {
     is_default: false
   });
   modalVisible.value = true;
+  nextTick(() => {
+    formRef.value?.clearValidate();
+  });
 };
 
 const editPassenger = (record) => {
@@ -197,6 +249,9 @@ const editPassenger = (record) => {
     is_default: record.is_default
   });
   modalVisible.value = true;
+  nextTick(() => {
+    formRef.value?.clearValidate();
+  });
 };
 
 const removePassenger = async (id) => {
@@ -211,6 +266,7 @@ const removePassenger = async (id) => {
 
 const handleModalOk = async () => {
   try {
+    await formRef.value.validate();
     if (isEdit.value) {
       await updatePassenger(currentId.value, formState);
       message.success('更新成功');
@@ -221,6 +277,9 @@ const handleModalOk = async () => {
     modalVisible.value = false;
     fetchPassengers(searchText.value);
   } catch (error) {
+    if (error.errorFields) {
+      return;
+    }
     message.error('操作失败: ' + (error.response?.data?.detail || error.message));
   }
 };
