@@ -16,7 +16,8 @@
                 <template #extra>
                     <div class="order-no">订单号: {{ order.id }}</div>
                     <a-button type="primary" v-if="order.status === 'pending'" @click="goToPay">去支付</a-button>
-                    <a-button danger v-if="['pending', 'paid'].includes(order.status)" @click="cancelOrder">取消订单</a-button>
+                    <a-button v-if="['paid', 'partial_refunded'].includes(order.status)" @click="showRefundModal">退票</a-button>
+                    <a-button danger v-if="['pending', 'paid'].includes(order.status)" @click="showCancelModal">取消订单</a-button>
                 </template>
             </a-result>
          </a-card>
@@ -35,10 +36,13 @@
 
          <!-- Passenger List -->
          <a-card title="乘客信息" style="margin-bottom: 24px">
-            <a-table :dataSource="order.items" :columns="columns" pagination="false" rowKey="id" class="passenger-table">
+            <a-table :dataSource="order.items" :columns="columns" :pagination="false" rowKey="id" class="passenger-table">
                 <template #bodyCell="{ column, record }">
                     <template v-if="column.key === 'seat_type'">
                         {{ seatTypeMap[record.seat_type] || record.seat_type }}
+                    </template>
+                    <template v-if="column.key === 'status'">
+                        {{ statusMap[record.status]?.text || record.status }}
                     </template>
                 </template>
             </a-table>
@@ -58,6 +62,24 @@
          >
             <p>取消后座位将不予保留。</p>
          </a-modal>
+
+         <a-modal
+            v-model:open="refundModalVisible"
+            title="申请退票"
+            @ok="confirmRefund"
+            class="refund-modal"
+            okText="确认退票"
+            cancelText="取消"
+         >
+            <p>请选择需要退票的乘客：</p>
+            <a-checkbox-group v-model:value="refundSelection" style="width: 100%">
+                <div v-for="item in refundableItems" :key="item.id" style="margin-bottom: 8px">
+                    <a-checkbox :value="item.id">
+                        {{ item.passenger_name }} ({{ seatTypeMap[item.seat_type] || item.seat_type }}) - ¥{{ item.price }}
+                    </a-checkbox>
+                </div>
+            </a-checkbox-group>
+         </a-modal>
       </div>
     </a-layout-content>
   </a-layout>
@@ -75,6 +97,8 @@ const orderId = route.params.id;
 const order = ref(null);
 const loading = ref(false);
 const cancelModalVisible = ref(false);
+const refundModalVisible = ref(false);
+const refundSelection = ref([]);
 
 const columns = [
   { title: '姓名', dataIndex: 'passenger_name', key: 'name' },
@@ -88,7 +112,8 @@ const statusMap = {
     pending: { text: '待支付', icon: 'warning' },
     paid: { text: '已支付', icon: 'success' },
     cancelled: { text: '已取消', icon: 'error' },
-    refunded: { text: '已退票', icon: 'info' }
+    refunded: { text: '已退票', icon: 'info' },
+    partial_refunded: { text: '部分退票', icon: 'info' }
 };
 
 const seatTypeMap = {
@@ -107,12 +132,17 @@ const trainInfo = computed(() => {
     return order.value?.train || order.value?.train_info; 
 });
 
+const refundableItems = computed(() => {
+    return order.value?.items.filter(item => item.status !== 'refunded') || [];
+});
+
 const fetchOrder = async () => {
     loading.value = true;
     try {
         const res = await fetch(`http://localhost:8000/api/v1/orders/${orderId}`);
         if (res.ok) {
             order.value = await res.json();
+            console.log('Order Loaded:', order.value); // Debug
         } else {
             message.error('获取订单失败');
         }
@@ -143,6 +173,35 @@ const confirmCancel = async () => {
             fetchOrder(); // Refresh
         } else {
             message.error('取消失败');
+        }
+    } catch (e) {
+        message.error('网络错误');
+    }
+};
+
+const showRefundModal = () => {
+    refundSelection.value = [];
+    refundModalVisible.value = true;
+};
+
+const confirmRefund = async () => {
+    if (refundSelection.value.length === 0) {
+        message.warn('请至少选择一张车票');
+        return;
+    }
+    refundModalVisible.value = false;
+    try {
+        const res = await fetch(`http://localhost:8000/api/v1/orders/${orderId}/refund`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_item_ids: refundSelection.value })
+        });
+        if (res.ok) {
+            message.success('退票成功');
+            fetchOrder(); // Refresh
+        } else {
+            const data = await res.json();
+            message.error(data.detail || '退票失败');
         }
     } catch (e) {
         message.error('网络错误');

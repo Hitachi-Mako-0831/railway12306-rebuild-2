@@ -135,21 +135,48 @@ def refund_order(
     *,
     db: Session = Depends(deps.get_db),
     order_id: int,
+    refund_in: schemas.OrderRefund,
 ) -> Any:
     """
-    Refund order.
+    Refund order (full or partial).
     """
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
-    if order.status != OrderStatus.PAID:
-        raise HTTPException(status_code=400, detail="Only paid orders can be refunded")
+    if order.status not in [OrderStatus.PAID, OrderStatus.PARTIAL_REFUNDED]:
+        raise HTTPException(status_code=400, detail="Only paid or partially refunded orders can be refunded")
         
-    order.status = OrderStatus.REFUNDED
-    # Update items status
-    for item in order.items:
+    # Determine items to refund
+    items_to_refund = []
+    if not refund_in.order_item_ids:
+        # Refund all non-refunded items
+        items_to_refund = [item for item in order.items if item.status != OrderStatus.REFUNDED]
+    else:
+        # Verify IDs
+        target_ids = set(refund_in.order_item_ids)
+        for item in order.items:
+            if item.id in target_ids:
+                if item.status == OrderStatus.REFUNDED:
+                     raise HTTPException(status_code=400, detail=f"Item {item.id} already refunded")
+                items_to_refund.append(item)
+        
+        if len(items_to_refund) != len(target_ids):
+             raise HTTPException(status_code=400, detail="Invalid order item IDs")
+
+    if not items_to_refund:
+         raise HTTPException(status_code=400, detail="No items to refund")
+
+    # Perform Refund
+    for item in items_to_refund:
         item.status = OrderStatus.REFUNDED
+    
+    # Update Order Status
+    all_refunded = all(item.status == OrderStatus.REFUNDED for item in order.items)
+    if all_refunded:
+        order.status = OrderStatus.REFUNDED
+    else:
+        order.status = OrderStatus.PARTIAL_REFUNDED
         
     db.commit()
     db.refresh(order)

@@ -39,6 +39,9 @@ class OrderCreate(OrderBase):
 class OrderUpdate(BaseModel):
     status: Optional[OrderStatus] = None
 
+class OrderRefund(BaseModel):
+    order_item_ids: List[int]
+
 class Order(OrderBase):
     id: int
     user_id: int
