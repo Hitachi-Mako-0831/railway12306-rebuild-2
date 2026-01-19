@@ -48,6 +48,16 @@
          <a-card style="text-align: right">
             <span class="total-price" style="font-size: 20px; color: red">总价: ¥{{ order.total_price }}</span>
          </a-card>
+
+         <a-modal
+            v-model:open="cancelModalVisible"
+            title="确认取消订单?"
+            @ok="confirmCancel"
+            okText="确定"
+            cancelText="取消"
+         >
+            <p>取消后座位将不予保留。</p>
+         </a-modal>
       </div>
     </a-layout-content>
   </a-layout>
@@ -64,6 +74,7 @@ const orderId = route.params.id;
 
 const order = ref(null);
 const loading = ref(false);
+const cancelModalVisible = ref(false);
 
 const columns = [
   { title: '姓名', dataIndex: 'passenger_name', key: 'name' },
@@ -116,8 +127,31 @@ const goToPay = () => {
     router.push(`/order/pay/${orderId}`);
 };
 
+const showCancelModal = () => {
+    console.log('showCancelModal called');
+    cancelModalVisible.value = true;
+};
+
+const confirmCancel = async () => {
+    cancelModalVisible.value = false;
+    try {
+        const res = await fetch(`http://localhost:8000/api/v1/orders/${orderId}/cancel`, {
+            method: 'POST'
+        });
+        if (res.ok) {
+            message.success('订单已取消');
+            fetchOrder(); // Refresh
+        } else {
+            message.error('取消失败');
+        }
+    } catch (e) {
+        message.error('网络错误');
+    }
+};
+
 const cancelOrder = () => {
-    message.info('暂未实现取消功能');
+    // Deprecated in favor of showCancelModal, but keeping if button calls this
+    showCancelModal();
 };
 
 onMounted(() => {
