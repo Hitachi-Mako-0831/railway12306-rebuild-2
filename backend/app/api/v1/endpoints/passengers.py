@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app import crud, models, schemas
@@ -12,12 +12,13 @@ def read_passengers(
     skip: int = 0,
     limit: int = 100,
     current_user: models.User = Depends(deps.get_current_user),
+    name: Optional[str] = None,
 ) -> Any:
     """
     Retrieve passengers.
     """
     passengers = crud.passenger.get_multi_by_owner(
-        db=db, user_id=current_user.id, skip=skip, limit=limit
+        db=db, user_id=current_user.id, name=name, skip=skip, limit=limit
     )
     return passengers
 
@@ -63,6 +64,16 @@ def update_passenger(
     if passenger.user_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
     
+    # REQ-4-3: If default passenger (self), Name and ID Card cannot be changed
+    if passenger.is_default:
+        if (passenger_in.name and passenger_in.name != passenger.name) or \
+           (passenger_in.id_card and passenger_in.id_card != passenger.id_card) or \
+           (passenger_in.id_type and passenger_in.id_type != passenger.id_type):
+             raise HTTPException(
+                status_code=400,
+                detail="Cannot modify name or ID info for the default passenger (yourself)"
+             )
+
     # Check duplicate if updating id_card
     if passenger_in.id_card and passenger_in.id_card != passenger.id_card:
          existing = crud.passenger.get_by_user_and_id_card(

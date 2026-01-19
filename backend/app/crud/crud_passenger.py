@@ -15,6 +15,7 @@ class CRUDPassenger(CRUDBase[Passenger, PassengerCreate, PassengerUpdate]):
             id_card=obj_in.id_card,
             type=obj_in.type,
             phone=obj_in.phone,
+            is_default=obj_in.is_default,
         )
         db.add(db_obj)
         db.commit()
@@ -22,11 +23,14 @@ class CRUDPassenger(CRUDBase[Passenger, PassengerCreate, PassengerUpdate]):
         return db_obj
 
     def get_multi_by_owner(
-        self, db: Session, *, user_id: int, skip: int = 0, limit: int = 100
+        self, db: Session, *, user_id: int, name: Optional[str] = None, skip: int = 0, limit: int = 100
     ) -> List[Passenger]:
+        query = db.query(self.model).filter(Passenger.user_id == user_id)
+        if name:
+            query = query.filter(Passenger.name.ilike(f"%{name}%"))
+        
         return (
-            db.query(self.model)
-            .filter(Passenger.user_id == user_id)
+            query.order_by(Passenger.is_default.desc(), Passenger.created_at.desc())
             .offset(skip)
             .limit(limit)
             .all()

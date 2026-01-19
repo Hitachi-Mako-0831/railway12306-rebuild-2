@@ -9,6 +9,7 @@ class PassengerBase(BaseModel):
     id_card: str = Field(..., max_length=30, description="ID Card Number")
     type: PassengerType = Field(default=PassengerType.ADULT, description="Passenger Type")
     phone: str = Field(..., max_length=20, description="Phone Number")
+    is_default: bool = Field(default=False, description="Is Self/Default Passenger")
     
 class PassengerCreate(PassengerBase):
     pass

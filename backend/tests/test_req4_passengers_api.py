@@ -51,3 +51,50 @@ def test_passenger_lifecycle():
     response = client.get("/api/v1/passengers/")
     data = response.json()
     assert not any(p["id"] == passenger_id for p in data)
+
+def test_duplicate_passenger():
+    id_card = get_random_id_card()
+    payload = {
+        "name": "Dup Passenger",
+        "id_type": 0,
+        "id_card": id_card,
+        "type": 0,
+        "phone": "13800138000"
+    }
+    
+    # Create first
+    response = client.post("/api/v1/passengers/", json=payload)
+    assert response.status_code == 200
+
+    # Create second (duplicate)
+    response = client.post("/api/v1/passengers/", json=payload)
+    assert response.status_code == 400
+    assert "already exists" in response.json()["detail"]
+
+def test_search_passenger():
+    id_card_1 = get_random_id_card()
+    id_card_2 = get_random_id_card()
+    
+    client.post("/api/v1/passengers/", json={
+        "name": "SearchTarget",
+        "id_type": 0,
+        "id_card": id_card_1,
+        "type": 0,
+        "phone": "13800138000"
+    })
+    
+    client.post("/api/v1/passengers/", json={
+        "name": "OtherPerson",
+        "id_type": 0,
+        "id_card": id_card_2,
+        "type": 0,
+        "phone": "13800138000"
+    })
+    
+    # Search match
+    response = client.get("/api/v1/passengers/?name=SearchTarget")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) >= 1
+    assert any(p["name"] == "SearchTarget" for p in data)
+    assert not any(p["name"] == "OtherPerson" for p in data)

@@ -20,6 +20,7 @@
   artifacts:
     ui_ids:
       - UI-PASSENGER-PAGE
+      - UI-USER-LAYOUT
     api_ids:
       - API-PASSENGER-LIST
       - API-PASSENGER-CREATE

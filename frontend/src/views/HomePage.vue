@@ -7,6 +7,9 @@
       <a-card title="首页" bordered>
         <p>前端：Vue 3 + Vite + Ant Design Vue</p>
         <p>后端：FastAPI + PostgreSQL</p>
+        <div style="margin-top: 20px;">
+          <a-button type="primary" @click="$router.push('/user/passengers')">进入个人中心 (乘客管理)</a-button>
+        </div>
       </a-card>
     </a-layout-content>
   </a-layout>

@@ -79,3 +79,11 @@ FUNC-PASSENGER-CRUD:
   downstream_ids: []
   db_tables:
     - passengers
+UI-USER-LAYOUT:
+  type: UI
+  related_req_id: REQ-4
+  description: User Personal Center Layout with Sidebar Navigation
+  path: frontend/src/layouts/UserLayout.vue
+  upstream_ids:
+    - UI-ROUTER
+  downstream_ids: []

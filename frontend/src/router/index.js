@@ -4,6 +4,7 @@ import LeftTicketSingle from '../views/ticket/LeftTicketSingle.vue';
 import LeftTicketRound from '../views/ticket/LeftTicketRound.vue';
 import OrderConfirm from '../views/order/OrderConfirm.vue';
 import PassengerPage from '../views/user/PassengerPage.vue';
+import UserLayout from '../layouts/UserLayout.vue';
 
 const routes = [
   {
@@ -27,9 +28,15 @@ const routes = [
     component: OrderConfirm
   },
   {
-    path: '/user/passengers',
-    name: 'PassengerPage',
-    component: PassengerPage
+    path: '/user',
+    component: UserLayout,
+    children: [
+      {
+        path: 'passengers',
+        name: 'PassengerPage',
+        component: PassengerPage
+      }
+    ]
   }
 ];
 
