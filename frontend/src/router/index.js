@@ -3,6 +3,7 @@ import HomePage from '../views/HomePage.vue';
 import LeftTicketSingle from '../views/ticket/LeftTicketSingle.vue';
 import LeftTicketRound from '../views/ticket/LeftTicketRound.vue';
 import OrderConfirm from '../views/order/OrderConfirm.vue';
+import PassengerPage from '../views/user/PassengerPage.vue';
 
 const routes = [
   {
@@ -24,6 +25,11 @@ const routes = [
     path: '/order/confirm',
     name: 'OrderConfirm',
     component: OrderConfirm
+  },
+  {
+    path: '/user/passengers',
+    name: 'PassengerPage',
+    component: PassengerPage
   }
 ];
 

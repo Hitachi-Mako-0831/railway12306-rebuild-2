@@ -1,0 +1,81 @@
+UI-PASSENGER-PAGE:
+  type: UI
+  related_req_id: REQ-4
+  description: Passenger Management UI Page
+  path: frontend/src/views/user/PassengerPage.vue
+  signature: ''
+  upstream_ids: []
+  downstream_ids:
+    - API-PASSENGER-LIST
+    - API-PASSENGER-CREATE
+    - API-PASSENGER-UPDATE
+    - API-PASSENGER-DELETE
+    - API-PASSENGER-CRUD
+  db_tables: []
+API-PASSENGER-LIST:
+  type: API
+  related_req_id: REQ-4
+  signature: GET /api/v1/passengers/
+  path: backend/app/api/v1/endpoints/passengers.py
+  description: List passengers
+  upstream_ids:
+    - UI-PASSENGER-PAGE
+  downstream_ids: []
+  db_tables:
+    - passengers
+API-PASSENGER-CREATE:
+  type: API
+  related_req_id: REQ-4
+  signature: POST /api/v1/passengers/
+  path: backend/app/api/v1/endpoints/passengers.py
+  description: Create passenger
+  upstream_ids:
+    - UI-PASSENGER-PAGE
+  downstream_ids: []
+  db_tables:
+    - passengers
+API-PASSENGER-UPDATE:
+  type: API
+  related_req_id: REQ-4
+  signature: PUT /api/v1/passengers/{id}
+  path: backend/app/api/v1/endpoints/passengers.py
+  description: Update passenger
+  upstream_ids:
+    - UI-PASSENGER-PAGE
+  downstream_ids: []
+  db_tables:
+    - passengers
+API-PASSENGER-DELETE:
+  type: API
+  related_req_id: REQ-4
+  signature: DELETE /api/v1/passengers/{id}
+  path: backend/app/api/v1/endpoints/passengers.py
+  description: Delete passenger
+  upstream_ids:
+    - UI-PASSENGER-PAGE
+  downstream_ids: []
+  db_tables:
+    - passengers
+API-PASSENGER-CRUD:
+  type: API
+  related_req_id: REQ-4
+  signature: /api/v1/passengers/
+  path: backend/app/api/v1/endpoints/passengers.py
+  description: Passenger CRUD API Endpoints
+  upstream_ids:
+    - UI-PASSENGER-PAGE
+  downstream_ids:
+    - FUNC-PASSENGER-CRUD
+  db_tables:
+    - passengers
+FUNC-PASSENGER-CRUD:
+  type: FUNC
+  related_req_id: REQ-4
+  signature: CRUDPassenger
+  path: backend/app/crud/crud_passenger.py
+  description: Passenger CRUD Logic
+  upstream_ids:
+    - API-PASSENGER-CRUD
+  downstream_ids: []
+  db_tables:
+    - passengers

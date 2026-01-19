@@ -22,3 +22,21 @@ class TrainType(str, Enum):
     D = "D"
     Z = "Z"
 
+
+class PassengerType(int, Enum):
+    ADULT = 0
+    STUDENT = 1
+    CHILD = 2
+
+
+class IdType(int, Enum):
+    ID_CARD = 0
+    PASSPORT = 1
+    TAIWAN_PASS = 2
+    HK_MACAU_PASS = 3
+
+
+class VerifyStatus(int, Enum):
+    UNVERIFIED = 0
+    VERIFIED = 1
+
