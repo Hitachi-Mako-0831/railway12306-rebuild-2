@@ -99,6 +99,11 @@ def pay_order(
     if order.status != OrderStatus.PENDING:
         raise HTTPException(status_code=400, detail="Order status is not pending")
         
+    if order.expires_at and order.expires_at < datetime.now():
+        order.status = OrderStatus.CANCELLED
+        db.commit()
+        raise HTTPException(status_code=400, detail="Order expired")
+
     order.status = OrderStatus.PAID
     db.commit()
     db.refresh(order)

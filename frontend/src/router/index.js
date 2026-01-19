@@ -31,6 +31,16 @@ const routes = [
     component: () => import('../views/order/OrderDetail.vue')
   },
   {
+    path: '/order/pay/:id',
+    name: 'OrderPay',
+    component: () => import('../views/order/OrderPay.vue')
+  },
+  {
+    path: '/order/success',
+    name: 'OrderSuccess',
+    component: () => import('../views/order/OrderSuccess.vue')
+  },
+  {
     path: '/user/orders',
     name: 'UserOrders',
     component: () => import('../views/user/OrderPage.vue')
