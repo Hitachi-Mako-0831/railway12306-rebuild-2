@@ -1,6 +1,5 @@
 <template>
-  <a-layout style="min-height: 100vh; background: #fff">
-     <a-layout-content style="display: flex; justify-content: center; align-items: center">
+  <div style="display: flex; justify-content: center; align-items: center; padding: 50px 0;">
          <a-result
             status="success"
             title="支付成功"
@@ -12,8 +11,7 @@
               <a-button key="buy" @click="router.push('/')">继续购票</a-button>
             </template>
           </a-result>
-     </a-layout-content>
-  </a-layout>
+  </div>
 </template>
 <script setup>
 import { useRouter } from 'vue-router';

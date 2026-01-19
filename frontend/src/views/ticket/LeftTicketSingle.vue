@@ -1,9 +1,5 @@
 <template>
-  <a-layout style="min-height: 100vh">
-    <a-layout-header>
-      <div style="color: #fff; font-size: 18px">Railway 12306 仿站 - 单程查询</div>
-    </a-layout-header>
-    <a-layout-content style="padding: 24px">
+  <div style="padding: 24px">
       <a-card title="车票查询" bordered>
         <a-form layout="inline" @submit.prevent>
           <a-form-item>
@@ -201,8 +197,7 @@
           </template>
         </a-table>
       </a-card>
-    </a-layout-content>
-  </a-layout>
+  </div>
 </template>
 
 <script setup>

@@ -2,6 +2,7 @@ from datetime import datetime, date
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 from app.models.enums import OrderStatus, SeatType
+from app.schemas.train import Train
 
 # --- OrderItem Schemas ---
 

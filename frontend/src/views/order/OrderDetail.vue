@@ -1,12 +1,9 @@
 <template>
-  <a-layout style="min-height: 100vh">
-    <a-layout-header>
-       <div style="color: #fff; font-size: 18px">
-         <a-button type="link" @click="router.back()" style="color: #fff"> &lt; 返回</a-button>
-         订单详情
+  <div style="padding: 24px">
+     <div style="margin-bottom: 16px">
+         <a-button type="link" @click="router.back()"> &lt; 返回</a-button>
+         <span style="font-size: 18px; font-weight: bold;">订单详情</span>
        </div>
-    </a-layout-header>
-    <a-layout-content style="padding: 24px">
       <div v-if="loading">加载中...</div>
       <div v-else-if="!order">订单不存在</div>
       <div v-else>
@@ -81,8 +78,7 @@
             </a-checkbox-group>
          </a-modal>
       </div>
-    </a-layout-content>
-  </a-layout>
+  </div>
 </template>
 
 <script setup>

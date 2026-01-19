@@ -1,9 +1,5 @@
 <template>
-  <a-layout style="min-height: 100vh">
-    <a-layout-header>
-      <div style="color: #fff; font-size: 18px">Railway 12306 仿站 - 订单确认</div>
-    </a-layout-header>
-    <a-layout-content style="padding: 24px">
+  <div style="padding: 24px">
       <!-- 1. Train Info -->
       <a-card title="列车信息" bordered class="train-info" style="margin-bottom: 24px">
         <a-descriptions bordered>
@@ -59,8 +55,7 @@
          <a-button type="primary" size="large" @click="submitOrder" :loading="submitting">提交订单</a-button>
       </div>
 
-    </a-layout-content>
-  </a-layout>
+  </div>
 </template>
 
 <script setup>

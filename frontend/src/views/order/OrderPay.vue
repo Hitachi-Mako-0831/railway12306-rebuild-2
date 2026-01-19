@@ -1,9 +1,5 @@
 <template>
-  <a-layout style="min-height: 100vh">
-    <a-layout-header>
-       <div style="color: #fff; font-size: 18px">订单支付</div>
-    </a-layout-header>
-    <a-layout-content style="padding: 24px">
+  <div style="padding: 24px">
       <div v-if="loading">加载中...</div>
       <div v-else-if="!order">订单不存在</div>
       <div v-else>
@@ -30,8 +26,7 @@
              <a-button type="primary" size="large" @click="handlePay" :loading="paying">立即支付</a-button>
          </div>
       </div>
-    </a-layout-content>
-  </a-layout>
+  </div>
 </template>
 
 <script setup>
