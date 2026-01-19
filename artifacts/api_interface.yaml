@@ -10,3 +10,10 @@ API-ORDER-LIST:
   signature: GET /api/v1/orders/
   upstream_ids: []
   downstream_ids: []
+API-PASSENGER-LIST:
+  related_req_id: REQ-3-1
+  path: backend/app/api/v1/endpoints/passengers.py
+  signature: GET /api/v1/passengers/
+  upstream_ids: []
+  downstream_ids:
+    - UI-ORDER-CONFIRM
