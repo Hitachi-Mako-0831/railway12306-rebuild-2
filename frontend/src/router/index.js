@@ -7,6 +7,8 @@ import LoginPage from '../views/auth/LoginPage.vue';
 import RegisterPage from '../views/auth/RegisterPage.vue';
 import ForgotPasswordPage from '../views/auth/ForgotPasswordPage.vue';
 import ProfilePage from '../views/user/ProfilePage.vue';
+import PassengerPage from '../views/user/PassengerPage.vue';
+import UserLayout from '../layouts/UserLayout.vue';
 
 const routes = [
   {
@@ -48,6 +50,17 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: ProfilePage
+  },
+  {
+    path: '/user',
+    component: UserLayout,
+    children: [
+      {
+        path: 'passengers',
+        name: 'PassengerPage',
+        component: PassengerPage
+      }
+    ]
   }
 ];
 

@@ -16,5 +16,16 @@
 - id: REQ-4
   parentId: null
   childrenIds: []
-  status: PENDING_CONTRACT
-  artifacts: {}
+  status: COMPLETED
+  artifacts:
+    ui_ids:
+      - UI-PASSENGER-PAGE
+      - UI-USER-LAYOUT
+    api_ids:
+      - API-PASSENGER-LIST
+      - API-PASSENGER-CREATE
+      - API-PASSENGER-UPDATE
+      - API-PASSENGER-DELETE
+      - API-PASSENGER-CRUD
+    func_ids:
+      - FUNC-PASSENGER-CRUD

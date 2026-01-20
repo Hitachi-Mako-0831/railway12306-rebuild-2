@@ -1,5 +1,5 @@
 from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
 
@@ -15,3 +15,6 @@ class User(Base):
     id_number: Mapped[str] = mapped_column(String(50), default="000000000000000000")
     phone: Mapped[str] = mapped_column(String(20), default="")
     user_type: Mapped[str] = mapped_column(String(20), default="adult")
+    passengers: Mapped[list["Passenger"]] = relationship(
+        "Passenger", back_populates="user", cascade="all, delete-orphan"
+    )

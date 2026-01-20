@@ -36,6 +36,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { login } from '../../api/auth.js';
+import { getProfile } from '../../api/user.js';
 import { useUserStore } from '../../stores/user.js';
 import Header12306 from '../../components/Header12306.vue';
 
@@ -66,7 +67,19 @@ const onSubmit = async () => {
   try {
     const res = await login({ username: username.value, password: password.value });
     if (res.data && res.data.code === 200 && res.data.data) {
-      userStore.setAuth(res.data.data.access_token, username.value);
+      const token = res.data.data.access_token;
+      userStore.setAuth(token, username.value);
+      try {
+        const profileRes = await getProfile();
+        if (
+          profileRes.data &&
+          profileRes.data.code === 200 &&
+          profileRes.data.data &&
+          profileRes.data.data.username
+        ) {
+          userStore.setAuth(token, profileRes.data.data.username);
+        }
+      } catch (e) {}
       router.push('/');
       return;
     }

@@ -3,29 +3,102 @@
 # 负责人: [待填写]
 # 关联前端: frontend/src/views/user/PassengerPage.vue
 # 关联后端: backend/app/api/v1/endpoints/passengers.py
+# 数据库表: passengers (PostgreSQL)
 # ============================================
 
 id: REQ-4
 name: 乘客管理系统
+description: 允许用户管理常用的乘车人信息，包含增删改查及与用户账号的自动同步。
+
+# ------------------------------------------
+# 1. 全局约束与校验规范 (Validation Spec)
+# ------------------------------------------
+constraints_spec:
+  max_passengers_per_user: 20  # 每个账户最多添加20名乘车人（防止黄牛倒票）
+  formats:
+    chinese_name:
+      pattern: "^[\u4e00-\u9fa5]{2,15}(?:·[\u4e00-\u9fa5]{2,15})*$"
+      description: "中文姓名，支持少数民族圆点分隔，2-15个汉字"
+    passport_name:
+      pattern: "^[a-zA-Z]+(?:\\s[a-zA-Z]+)*$"
+      description: "英文姓名，允许空格"
+    phone_cn:
+      pattern: "^1[3-9]\\d{9}$"
+      description: "中国大陆11位手机号"
+    id_card_cn:
+      pattern: "^[1-9]\\d{5}(18|19|20)\\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\\d{3}[0-9Xx]$"
+      description: "18位二代身份证，校验位支持X（不区分大小写）"
+    passport:
+      pattern: "^[a-zA-Z0-9]{5,15}$"
+      description: "护照号码宽松校验"
+
+# ------------------------------------------
+# 2. 数据库设计规范 (PostgreSQL)
+# ------------------------------------------
+database_spec:
+  table_name: passengers
+  comment: "存储用户的常用乘车人信息"
+  columns:
+    - name: id
+      type: BIGSERIAL
+      constraint: PRIMARY KEY
+    - name: user_id
+      type: BIGINT
+      constraint: NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      description: "关联用户，若用户注销，乘车人信息随之删除"
+    - name: name
+      type: VARCHAR(50)
+      constraint: NOT NULL
+      description: "真实姓名，存入前需去除首尾空格"
+    - name: id_type
+      type: SMALLINT
+      constraint: NOT NULL DEFAULT 0 CHECK (id_type IN (0, 1, 2, 3))
+      description: "0-身份证, 1-护照, 2-台胞证, 3-港澳通行证"
+    - name: id_card
+      type: VARCHAR(30)
+      constraint: NOT NULL
+      description: "证件号码，存入前需转大写（针对身份证X）"
+    - name: type
+      type: SMALLINT
+      constraint: DEFAULT 0 CHECK (type IN (0, 1, 2))
+      description: "0-成人, 1-学生, 2-儿童"
+    - name: phone
+      type: VARCHAR(20)
+      constraint: NOT NULL
+      description: "联系电话"
+    - name: is_default
+      type: BOOLEAN
+      constraint: DEFAULT FALSE
+      description: "是否为本人"
+    - name: verify_status
+      type: SMALLINT
+      constraint: DEFAULT 0
+      description: "0-待核验, 1-已通过, 2-核验失败"
+    - name: created_at
+      type: TIMESTAMP WITH TIME ZONE
+      constraint: DEFAULT CURRENT_TIMESTAMP
+    - name: updated_at
+      type: TIMESTAMP WITH TIME ZONE
+      constraint: DEFAULT CURRENT_TIMESTAMP
+
+  indexes:
+    - name: idx_passengers_user_id
+      columns: [user_id]
+    - name: uq_passengers_user_card
+      columns: [user_id, id_type, id_card]
+      unique: true
+      description: "同一用户下，证件类型+证件号必须唯一"
+
 functional_description: |
-  该模块允许用户管理常用的乘车人信息。包含查看乘车人列表、新增、修改、以及单个或批量删除操作。
-  核心逻辑：
-  - 用户本人信息会自动同步为“默认乘客”，且不可删除。
-  - 乘车人信息包含敏感数据剥离（姓名、证件号、手机号掩码）。
-  - 有购票记录的乘车人受系统保护，禁止物理删除。
-  - 包含证件类型校验与重复性校验。
+  模块核心功能：
+  1. 列表查询：支持脱敏展示、分页、按姓名搜索。
+  2. 新增：强校验逻辑，防重复，防超限。
+  3. 修改：区分“本人”与“他人”的修改权限。
+  4. 删除：基于外键引用完整性的保护机制。
+
 ui_description: |
-  参考图片路径: requirements/assets/4.乘客管理/4.png
-  - 采用 12306 经典个人中心布局，左侧为导航，右侧为管理面板。
-  - 列表采用表格展示，表头为浅灰色背景（#f8f8f8）。
-  - 核验状态以图标形式展示在表格中。
-scenarios:
-  - name: 管理常用乘车人
-    steps:
-      - action: 进入“乘车人管理”页面
-        expectation: 列表显示当前账号下所有乘车人，第一行显示“本人”。
-      - action: 在搜索框输入“张三”并点击查询
-        expectation: 列表即时过滤，仅显示姓名包含“张三”的人员。
+  
+  界面参考 12306 个人中心。
 
 children:
   # ------------------------------------------
@@ -33,105 +106,139 @@ children:
   # ------------------------------------------
   - id: REQ-4-1
     name: 乘车人列表展示
-    functional_description: |
-      展示所有已保存的乘车人数据。
-      - 排序规则：默认乘客（is_default=true）置顶，其余按创建时间升序排列。
-      - 数据脱敏：
-        - 证件号：保留前 4 位和后 3 位，中间 10 位掩码（*）。
-        - 手机号：前缀加 (+86)，保留前 3 位和后 4 位，中间 4 位掩码（*）。
-      - 核验状态：
-        - 人像图标：前端根据 `status` 显示是否通过身份核验。
-        - 手机图标：根据 `phoneVerified` 显示是否通过手机核验。
-    ui_description: |
-      参考图片路径: requirements/assets/4.乘客管理/4.1.png
-      本人条目姓名后方带蓝色“本人”标签。
-    children:
-      - id: REQ-4-1-1
-        name: 列表分页与搜索
-        functional_description: "每页显示 10 条数据，支持按姓名模糊搜索（前端过滤）。"
-        scenarios:
-          - name: 搜索不存在的乘客
-            steps:
-              - action: 输入“不存在的名字”点击查询
-                expectation: 表格显示居中的“暂无乘车人”提示。
+    database_interaction: |
+      - SQL Query:
+        ```sql
+        SELECT id, name, id_type, id_card, type, phone, is_default, verify_status
+        FROM passengers 
+        WHERE user_id = :uid 
+        ORDER BY is_default DESC, created_at DESC 
+        LIMIT :limit OFFSET :offset;
+        ```
+      - 脱敏逻辑 (Python层处理):
+        - `id_card`: `raw[:4] + '*' * (len(raw)-8) + raw[-4:]` (若长度不足8位则不脱敏或特殊处理)
+        - `phone`: `raw[:3] + '****' + raw[-4:]`
+    functional_description: "展示乘车人列表，默认本人置顶，其余按创建时间倒序。"
 
   # ------------------------------------------
-  # REQ-4-2: 新增乘车人
+  # REQ-4-2: 新增乘车人 (含详细校验)
   # ------------------------------------------
   - id: REQ-4-2
     name: 新增乘车人
+    database_interaction: |
+      1. **数量限制检查**:
+         ```sql
+         SELECT count(*) FROM passengers WHERE user_id = :uid;
+         ```
+         如果 count >= 20，直接抛出业务异常 `PassengerLimitExceeded` ("常用乘车人已达上限20人")。
+      
+      2. **数据清洗 (Sanitization)**:
+         - `name`: `name.strip()`
+         - `id_card`: `id_card.strip().upper()` (确保身份证末位x转为X)
+      
+      3. **插入执行**:
+         尝试执行 INSERT。
+         ```sql
+         INSERT INTO passengers (...) VALUES (...);
+         ```
+      
+      4. **异常映射**:
+         - Catch `UniqueViolation` (Postgres code 23505) -> Return 400 "该证件号码已存在于您的列表中".
+         - Catch `StringDataRightTruncation` (Postgres code 22001) -> Return 400 "输入数据过长".
     functional_description: |
-      提供对话框表单用于添加新成员。
-      - 表单校验规则：
-        - 姓名：必填，不低于 2 个字符。
-        - 证件类型：下拉选择（身份证、港澳通行证、台胞证、护照）。
-        - 证件号码：必填，需符合基本格式。
-        - 手机号：必填，必须为 11 位数字。
-        - 旅客类型：下拉选择（成人、学生、儿童）。
-      - 重复性检查：系统会比对“证件类型+证件号码”，若已存在则拦截并提示。
-    ui_description: |
-      参考图片路径: requirements/assets/4.乘客管理/4.2.png
-      弹窗标题“新增乘车人”，提交按钮为橙色（#FF8200）。
+      用户填写表单添加乘车人。
+      - 前端校验：正则实时校验手机号和身份证格式。
+      - 后端校验：再次校验正则，检查数量上限，检查重复性。
     scenarios:
-      - name: 成功添加乘车人
+      - name: 身份证格式错误
         steps:
-          - action: 点击“添加”按钮
-          - action: 输入姓名“李四”，证件号“110101199001011234”，手机号“13800138000”
-          - action: 点击“确定”
-            expectation: 弹窗关闭，提示“添加成功”，列表刷新。
-      - name: 校验失败测试
+          - action: 输入身份证 "11010119900101123" (少一位)
+          - expectation: 前端输入框下方变红，提示"身份证格式不正确"，提交按钮禁用。
+      - name: 数量超限
         steps:
-          - action: 手机号输入“12345”点击确定
-            expectation: 页面上方弹出错误消息“请填写11位手机号”，弹窗不关闭。
+          - action: 当前已有20人，点击添加
+          - expectation: 提交时后端返回错误 "常用乘车人已达上限20人"。
 
   # ------------------------------------------
   # REQ-4-3: 修改乘车人信息
   # ------------------------------------------
   - id: REQ-4-3
     name: 修改乘车人信息
-    functional_description: |
-      点击操作列的编辑图标，回填数据至表单进行修改。
-      - 特殊限制：不支持修改默认乘客（本人）的信息。
-    ui_description: |
-      参考图片路径: requirements/assets/4.乘客管理/4.3.png
-      表单回填当前所选乘客的所有信息，证件号显示处于可编辑状态。
-    scenarios:
-      - name: 修改联系电话
-        steps:
-          - action: 点击李四行的编辑图标
-          - action: 修改手机号并确定
-            expectation: 列表显示的手机号对应更新。
+    database_interaction: |
+      1. **权限与锁定检查**:
+         ```sql
+         SELECT is_default FROM passengers WHERE id = :pid AND user_id = :uid;
+         ```
+         - 若 `is_default` 为 True，且前端试图修改 `name` 或 `id_card` -> 抛出 403 "默认乘车人仅允许修改手机号".
+      
+      2. **更新执行**:
+         ```sql
+         UPDATE passengers 
+         SET phone = :phone, type = :type, 
+             name = CASE WHEN is_default THEN name ELSE :name END, -- 再次防止SQL注入修改本人姓名
+             id_card = CASE WHEN is_default THEN id_card ELSE :id_card END,
+             updated_at = NOW()
+         WHERE id = :pid AND user_id = :uid;
+         ```
+    functional_description: "修改现有信息。若为本人，姓名/证件号输入框置灰禁用。"
 
   # ------------------------------------------
-  # REQ-4-4: 删除与批量删除
+  # REQ-4-4: 删除与批量删除 (关联性保护)
   # ------------------------------------------
   - id: REQ-4-4
     name: 删除与批量删除
+    database_interaction: |
+      1. **关联性检查 (Critical Step)**:
+         在此系统中，我们不希望用户删除有过往订单的乘车人，因为这会导致历史订单查询时关联数据丢失(除非做冗余存储)。
+         
+         方案 A (严格模式 - 推荐):
+         ```sql
+         SELECT 1 FROM orders WHERE passenger_id IN (:ids) LIMIT 1;
+         ```
+         若有结果 -> 抛出 400 "所选乘车人存在关联订单，无法删除".
+
+         方案 B (软删除 - 备选):
+         如果表结构有 `is_deleted`，则执行 UPDATE。但根据 Database Spec，目前是硬删除。
+      
+      2. **执行删除**:
+         ```sql
+         DELETE FROM passengers 
+         WHERE id IN (:ids) 
+           AND user_id = :uid 
+           AND is_default = FALSE; -- 数据库层面的最后一道防线
+         ```
+         
+      3. **反馈**:
+         - 如果 `DELETE` 返回的 row count 小于前端请求的 id 数量，可能是包含了“本人”或者数据不存在，前端需提示 "部分删除成功（默认乘车人无法删除）"。
     functional_description: |
-      - 单个删除：点击行末尾的删除图标。
-      - 批量删除：勾选多行后点击顶部的“批量删除”。
-      - 安全约束：
-        1. “本人”所在的行，多选框置灰禁用，操作列显示“默认乘客”文字，禁止删除。
-        2. 后端校验：若乘车人已有购票记录（订单关联），删除请求将被拦截并返回“已有购票记录，无法删除”。
-    ui_description: |
-      参考图片路径: requirements/assets/4.乘客管理/4.4.png
-      批量删除按钮背景色为白色，带红色删除图标。
-    scenarios:
-      - name: 批量删除测试
-        steps:
-          - action: 勾选两个非本人乘客
-          - action: 点击“批量删除”
-            expectation: 弹出确认（或直接删除），列表对应条目消失。
-      - name: 保护逻辑测试
-        steps:
-          - action: 尝试勾选“本人”列的复选框
-            expectation: 无法勾选，点击无效。
+      删除选中的乘车人。
+      - 限制：
+        1. 只要该乘车人ID出现在 `orders` 表中，无论订单状态如何，均禁止删除（提示用户：该乘客有历史订单，无法移除）。
+        2. 默认乘客禁止删除。
 
   # ------------------------------------------
-  # REQ-4-5: 后端数据同步逻辑 (Sync)
+  # REQ-4-5: 自动同步 (Sync)
   # ------------------------------------------
   - id: REQ-4-5
     name: 后端数据同步逻辑
-    functional_description: |
-      系统启动时（onMounted）会静默调用 `/sync-default` 接口。
-      逻辑：如果数据库中尚无当前用户的默认乘客记录，则自动抓取 User 表中的真实姓名、证件、电话创建一条 `is_default=true` 的乘客记录。
+    database_interaction: |
+      - 这是一个 `UPSERT` (Insert on Conflict) 变种逻辑，或者是 "Check-Then-Act"。
+      - 逻辑：
+        ```python
+        # Python Pseudo-code
+        default_passenger = db.query(Passenger).filter_by(user_id=uid, is_default=True).first()
+        if not default_passenger:
+            user = db.query(User).get(uid)
+            new_p = Passenger(
+                user_id=uid,
+                name=user.real_name,
+                id_type=user.id_type,
+                id_card=user.id_card,
+                phone=user.phone,
+                is_default=True
+            )
+            db.add(new_p)
+            db.commit()
+        ```
+      - **异常处理**: 如果同步时发现 User 表的身份证号已经被该 User ID 下的 *另一个非默认* 乘客占用了（极其罕见的数据不一致），则捕获异常并跳过同步，记录 Error Log。
+    functional_description: "保证用户总能看到自己作为乘车人出现在列表中。"

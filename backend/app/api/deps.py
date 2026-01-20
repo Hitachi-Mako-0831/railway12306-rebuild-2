@@ -1,17 +1,25 @@
-from loguru import logger
+from typing import Generator
+from fastapi import Depends
 from sqlalchemy.orm import Session
-from app.db.init_db import init_db
 from app.db.session import SessionLocal
 from app.models.user import User
 
 
-def seed_user(db: Session) -> None:
+def get_db() -> Generator:
+    try:
+        db = SessionLocal()
+        yield db
+    finally:
+        db.close()
+
+
+def get_current_user(db: Session = Depends(get_db)) -> User:
     user = db.query(User).filter(User.username == "testuser").first()
     if not user:
         user = User(
             username="testuser",
             email="test@example.com",
-            hashed_password="hashedpassword",
+            hashed_password="mock_hash_password",
             real_name="",
             id_type="id_card",
             id_number="110101199001010099",
@@ -20,20 +28,5 @@ def seed_user(db: Session) -> None:
         )
         db.add(user)
         db.commit()
-        logger.info("Seeded test user")
-    else:
-        logger.info("Test user already exists")
-
-
-def main() -> None:
-    init_db()
-    db = SessionLocal()
-    try:
-        seed_user(db)
-    finally:
-        db.close()
-    logger.info("Demo data seeding completed.")
-
-
-if __name__ == "__main__":
-    main()
+        db.refresh(user)
+    return user

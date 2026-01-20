@@ -12,6 +12,7 @@ from app.main import app
 from app.core.security import get_password_hash
 from app.db.session import SessionLocal
 from app.models.user import User
+from app.models.passenger import Passenger
 
 
 client = TestClient(app)
@@ -20,6 +21,7 @@ client = TestClient(app)
 def clear_users() -> None:
     db = SessionLocal()
     try:
+        db.query(Passenger).delete()
         db.query(User).delete()
         db.commit()
     finally:
@@ -91,4 +93,3 @@ def test_update_profile_persists_changes() -> None:
         assert user.user_type == "学生"
     finally:
         db.close()
-
