@@ -5,6 +5,7 @@ from jose import JWTError, jwt
 from app.core.security import ALGORITHM, SECRET_KEY
 from app.db.session import SessionLocal
 from app.models.user import User
+from app import crud
 from app.schemas.user import UserResponse, UserUpdateRequest
 
 
@@ -71,19 +72,20 @@ async def update_profile(
         user.user_type = payload.user_type
         db.commit()
         db.refresh(user)
+        crud.passenger.sync_default_for_user(db, user)
+
+        response = UserResponse(
+            username=user.username,
+            real_name=user.real_name,
+            country="中国",
+            id_type=user.id_type,
+            id_number=user.id_number,
+            phone=user.phone,
+            email=user.email or "",
+            user_type=user.user_type,
+        )
     finally:
         db.close()
-
-    response = UserResponse(
-        username=user.username,
-        real_name=user.real_name,
-        country="中国",
-        id_type=user.id_type,
-        id_number=user.id_number,
-        phone=user.phone,
-        email=user.email or "",
-        user_type=user.user_type,
-    )
 
     return {
         "code": 200,

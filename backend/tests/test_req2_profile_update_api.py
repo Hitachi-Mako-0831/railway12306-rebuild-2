@@ -13,6 +13,7 @@ from app.core.security import get_password_hash
 from app.db.session import SessionLocal
 from app.models.user import User
 from app.models.passenger import Passenger
+from app.models.enums import IdType
 
 
 client = TestClient(app)
@@ -91,5 +92,18 @@ def test_update_profile_persists_changes() -> None:
         assert user.phone == "13700000000"
         assert user.email == "new@example.com"
         assert user.user_type == "学生"
+
+        passenger = (
+            db.query(Passenger)
+            .filter(
+                Passenger.user_id == user.id,
+                Passenger.is_default.is_(True),
+            )
+            .first()
+        )
+        assert passenger is not None
+        assert passenger.name == user.real_name
+        assert passenger.id_card == user.id_number
+        assert passenger.phone == user.phone
     finally:
         db.close()

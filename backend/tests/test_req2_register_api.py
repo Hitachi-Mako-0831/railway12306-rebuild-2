@@ -12,6 +12,7 @@ from app.main import app
 from app.db.session import SessionLocal
 from app.models.user import User
 from app.models.passenger import Passenger
+from app.models.enums import IdType
 
 
 client = TestClient(app)
@@ -61,6 +62,19 @@ def test_register_success_creates_user():
         assert user.id_number == "110101199001010011"
         assert user.phone == "13800000000"
         assert user.user_type == "adult"
+
+        passenger = (
+            db.query(Passenger)
+            .filter(
+                Passenger.user_id == user.id,
+                Passenger.is_default.is_(True),
+            )
+            .first()
+        )
+        assert passenger is not None
+        assert passenger.name == user.real_name
+        assert passenger.id_card == user.id_number
+        assert passenger.phone == user.phone
     finally:
         db.close()
 

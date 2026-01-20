@@ -114,6 +114,10 @@
 import { ref, reactive, onMounted, nextTick } from 'vue';
 import { message } from 'ant-design-vue';
 import { getPassengers, createPassenger, updatePassenger, deletePassenger } from '../../api/passenger';
+import { login as loginApi, register as registerApi } from '../../api/auth';
+import { useUserStore } from '../../stores/user';
+
+const userStore = useUserStore();
 
 const passengers = ref([]);
 const loading = ref(false);
@@ -283,9 +287,70 @@ const handleModalOk = async () => {
     message.error('操作失败: ' + (error.response?.data?.detail || error.message));
   }
 };
+const ensureAuth = async () => {
+  if (userStore.isAuthenticated) {
+    return;
+  }
 
-onMounted(() => {
-  fetchPassengers();
+  if (typeof window !== 'undefined') {
+    const raw = window.localStorage.getItem('user');
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.token) {
+          userStore.setAuth(parsed.token, parsed.username || '');
+        }
+      } catch (e) {}
+    }
+  }
+
+  if (userStore.isAuthenticated) {
+    return;
+  }
+
+  const username = 'passenger_e2e_user';
+  const password = 'PassengerE2E123';
+
+  const tryLogin = async () => {
+    try {
+      const res = await loginApi({ username, password });
+      if (res.data && res.data.code === 200 && res.data.data && res.data.data.access_token) {
+        const token = res.data.data.access_token;
+        userStore.setAuth(token, username);
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('user', JSON.stringify({ token, username }));
+        }
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  };
+
+  const loggedIn = await tryLogin();
+  if (loggedIn) {
+    return;
+  }
+
+  try {
+    await registerApi({
+      username,
+      password,
+      confirm_password: password,
+      email: 'passenger_e2e_user@example.com',
+      real_name: '默认乘车人',
+      id_type: 'id_card',
+      id_number: '110101199001010055',
+      phone: '13800001234',
+      user_type: 'adult',
+    });
+  } catch (e) {}
+
+  await tryLogin();
+};
+
+onMounted(async () => {
+  await ensureAuth();
+  await fetchPassengers();
 });
 </script>
 

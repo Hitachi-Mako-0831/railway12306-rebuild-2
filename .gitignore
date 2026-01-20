@@ -1,9 +1,23 @@
-**/node_modules/
-**/.DS_Store
-dist/
-.env
-*.pyc
-__pycache__/
-.vscode/
+# General
+.DS_Store
 .idea/
-package-lock.json
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build
+dist/
+build/
+coverage/
+
+# Environment
+.env

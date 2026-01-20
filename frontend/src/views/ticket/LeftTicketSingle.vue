@@ -1,9 +1,6 @@
 <template>
-  <a-layout style="min-height: 100vh">
-    <a-layout-header>
-      <div style="color: #fff; font-size: 18px">Railway 12306 仿站 - 单程查询</div>
-    </a-layout-header>
-    <a-layout-content style="padding: 24px">
+  <div style="padding: 24px">
+      <div style="margin-bottom: 16px; font-size: 18px; font-weight: bold;">Railway 12306 仿站 - 单程查询</div>
       <a-card title="车票查询" bordered>
         <a-form layout="inline" @submit.prevent>
           <a-form-item>
@@ -206,8 +203,7 @@
           </template>
         </a-table>
       </a-card>
-    </a-layout-content>
-  </a-layout>
+  </div>
 </template>
 
 <script setup>
@@ -462,6 +458,8 @@ const onClickBook = record => {
   params.set('travelDate', departureDate.value || '');
   params.set('fromStation', record.from_station || '');
   params.set('toStation', record.to_station || '');
+  params.set('departureTime', record.departure_time || '');
+  params.set('arrivalTime', record.arrival_time || '');
 
   router.push({ path: '/order/confirm', query: Object.fromEntries(params.entries()) });
 };

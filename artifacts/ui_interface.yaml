@@ -1,0 +1,7 @@
+UI-ORDER-CONFIRM:
+  related_req_id: REQ-3-1
+  path: frontend/src/views/order/OrderConfirm.vue
+  description: 订单确认页。包含列车信息卡片、乘客选择列表、票种席别动态行、提交按钮。
+  upstream_ids:
+    - API-ORDER-CREATE
+  downstream_ids: []

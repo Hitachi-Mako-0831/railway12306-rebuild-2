@@ -5,7 +5,7 @@
       <a-layout-sider width="200" style="background: #f8f8f8">
         <div style="padding: 16px; font-weight: 600">我的12306</div>
         <a-menu mode="inline" style="border-right: 0">
-          <a-menu-item key="profile">个人中心</a-menu-item>
+          <a-menu-item key="profile">账户概览</a-menu-item>
         </a-menu>
       </a-layout-sider>
       <a-layout-content style="padding: 24px">

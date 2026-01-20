@@ -96,11 +96,11 @@ const handleDocumentClick = event => {
 };
 
 onMounted(() => {
-  document.addEventListener('click', handleDocumentClick);
+  document.addEventListener('click', handleDocumentClick, true);
 });
 
 onBeforeUnmount(() => {
-  document.removeEventListener('click', handleDocumentClick);
+  document.removeEventListener('click', handleDocumentClick, true);
 });
 </script>
 

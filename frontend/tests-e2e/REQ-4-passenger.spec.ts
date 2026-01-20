@@ -138,28 +138,46 @@ test.describe('Passenger Management', () => {
   });
 
   test('should protect default passenger (REQ-4-3)', async ({ page }) => {
-    const randomName = `SelfUser`;
-    const randomId = generateValidId();
-    const randomPhone = `138${Math.floor(10000000 + Math.random() * 90000000)}`;
+    const username = `self_passenger_user`;
+    const password = `SelfPass1234`;
 
-    // Call API to create default passenger
-    const response = await page.request.post('/api/v1/passengers/', {
+    const registerResponse = await page.request.post('/api/v1/register', {
       data: {
-        name: randomName,
-        id_type: 0,
-        id_card: randomId,
-        type: 0,
-        phone: randomPhone,
-        is_default: true
-      }
+        username,
+        password,
+        confirm_password: password,
+        email: 'self_passenger_user@example.com',
+        real_name: '本人乘车人',
+        id_type: 'id_card',
+        id_number: generateValidId(),
+        phone: '13800008888',
+        user_type: 'adult',
+      },
     });
-    expect(response.ok()).toBeTruthy();
+    expect(registerResponse.ok()).toBeTruthy();
+
+    const loginResponse = await page.request.post('/api/v1/login', {
+      data: {
+        username,
+        password,
+      },
+    });
+    expect(loginResponse.ok()).toBeTruthy();
+    const body = await loginResponse.json();
+    const token = body.data.access_token;
+
+    await page.goto('/login');
+    await page.getByPlaceholder('用户名/邮箱/手机号').fill(username);
+    await page.getByPlaceholder('密码').fill(password);
+    await page.getByRole('button', { name: '登录' }).click();
+
+    await expect(page).toHaveURL('/');
 
     await page.goto('/user/passengers');
     await expect(page.locator('h2')).toHaveText('常用联系人', { timeout: 10000 });
 
     // Verify Blue Tag "本人"
-    const row = page.locator('tr', { hasText: randomName }).first();
+    const row = page.locator('tr', { hasText: '本人乘车人' }).first();
     await expect(row.locator('.ant-tag-blue')).toHaveText('本人');
     
     // Verify Delete button is NOT present

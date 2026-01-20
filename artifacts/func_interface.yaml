@@ -1,0 +1,9 @@
+FUNC-ORDER-CREATE:
+  related_req_id: REQ-3
+  path: backend/app/api/v1/endpoints/orders.py
+  signature: create_order
+  upstream_ids:
+    - API-ORDER-CREATE
+  db_tables:
+    - orders
+    - order_items

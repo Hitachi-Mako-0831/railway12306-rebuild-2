@@ -59,8 +59,28 @@ const routes = [
         path: 'passengers',
         name: 'PassengerPage',
         component: PassengerPage
+      },
+      {
+        path: 'orders',
+        name: 'UserOrders',
+        component: () => import('../views/user/OrderPage.vue')
       }
     ]
+  },
+  {
+    path: '/order/detail/:id',
+    name: 'OrderDetail',
+    component: () => import('../views/order/OrderDetail.vue')
+  },
+  {
+    path: '/order/pay/:id',
+    name: 'OrderPay',
+    component: () => import('../views/order/OrderPay.vue')
+  },
+  {
+    path: '/order/success',
+    name: 'OrderSuccess',
+    component: () => import('../views/order/OrderSuccess.vue')
   }
 ];
 

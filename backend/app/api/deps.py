@@ -1,10 +1,19 @@
 from typing import Generator
-from fastapi import Depends
+
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
 from sqlalchemy.orm import Session
+
 from app.db.session import SessionLocal
 from app.models.user import User
+from app.core.security import ALGORITHM, SECRET_KEY
 
-def get_db() -> Generator:
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
+
+
+def get_db() -> Generator[Session, None, None]:
     try:
         db = SessionLocal()
         yield db
@@ -12,31 +21,19 @@ def get_db() -> Generator:
         db.close()
 
 
-def get_current_user(db: Session = Depends(get_db)) -> User:
-    user = db.query(User).filter(User.username == "testuser").first()
+def get_current_user(
+    db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
+) -> User:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    username = payload.get("sub")
+    if not username:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    user = db.query(User).filter(User.username == username).first()
     if not user:
-        user = User(
-            username="testuser",
-            email="test@example.com",
-            hashed_password="mock_hash_password",
-            real_name="",
-            id_type="id_card",
-            id_number="110101199001010099",
-            phone="13800000000",
-            user_type="adult",
-# Mock auth for now since REQ-2 is not ready
-def get_current_user(db: Session = Depends(get_db)) -> User:
-    # Check if user 1 exists, if not create it (for development)
-    user = db.query(User).filter(User.id == 1).first()
-    if not user:
-        # We need to make sure we don't break if User model has required fields.
-        user = User(
-            id=1,
-            username="testuser",
-            email="test@example.com",
-            hashed_password="mock_hash_password"
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+        raise HTTPException(status_code=404, detail="User not found")
     return user
