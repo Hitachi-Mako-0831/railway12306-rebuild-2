@@ -21,3 +21,6 @@ coverage/
 
 # Environment
 .env
+
+# Test artifacts
+test-results/
