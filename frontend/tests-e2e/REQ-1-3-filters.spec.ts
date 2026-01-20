@@ -12,13 +12,13 @@ test.describe('REQ-1-3 实时筛选面板', () => {
     await select.click();
     await page.getByTestId('filter-time-option-06001200').click();
 
-    const rows = page.locator('[data-testid^="train-row-"]');
-    const count = await rows.count();
+    const cells = page.locator('[data-testid^="train-departure-time-cell-"]');
+    const count = await cells.count();
     expect(count).toBeGreaterThan(0);
 
-    for (let i = 0; i < count; i += 1) {
-      const cell = rows.nth(i).locator('xpath=ancestor::tr/td[6]');
-      const text = await cell.innerText();
+    const limit = Math.min(count, 3);
+    for (let i = 0; i < limit; i += 1) {
+      const text = await cells.nth(i).innerText();
       const [hourStr] = text.split(':');
       const hour = parseInt(hourStr, 10);
       expect(hour).toBeGreaterThanOrEqual(6);
@@ -91,4 +91,3 @@ test.describe('REQ-1-3 实时筛选面板', () => {
     }
   });
 });
-

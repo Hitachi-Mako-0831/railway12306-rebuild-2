@@ -179,6 +179,11 @@
                 {{ record.train_number }}
               </span>
             </template>
+            <template v-else-if="column.dataIndex === 'departure_time'">
+              <span :data-testid="`train-departure-time-cell-${index}`">
+                {{ record.departure_time }}
+              </span>
+            </template>
             <template v-else-if="column.dataIndex === 'seat_second_class'">
               <span
                 :style="{

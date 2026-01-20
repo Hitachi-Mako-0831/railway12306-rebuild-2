@@ -3,6 +3,10 @@ import HomePage from '../views/HomePage.vue';
 import LeftTicketSingle from '../views/ticket/LeftTicketSingle.vue';
 import LeftTicketRound from '../views/ticket/LeftTicketRound.vue';
 import OrderConfirm from '../views/order/OrderConfirm.vue';
+import LoginPage from '../views/auth/LoginPage.vue';
+import RegisterPage from '../views/auth/RegisterPage.vue';
+import ForgotPasswordPage from '../views/auth/ForgotPasswordPage.vue';
+import ProfilePage from '../views/user/ProfilePage.vue';
 import PassengerPage from '../views/user/PassengerPage.vue';
 import UserLayout from '../layouts/UserLayout.vue';
 
@@ -26,6 +30,26 @@ const routes = [
     path: '/order/confirm',
     name: 'OrderConfirm',
     component: OrderConfirm
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: LoginPage
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: RegisterPage
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: ForgotPasswordPage
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: ProfilePage
   },
   {
     path: '/user',
